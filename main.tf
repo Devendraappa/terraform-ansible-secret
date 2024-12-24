@@ -9,12 +9,7 @@ resource "null_resource" "delete_key_pair" {
       # Install AWS CLI (Ubuntu)
       sudo apt-get update
       sudo apt-get install -y awscli
-
-      # Configure AWS CLI (Optional: you can skip if using IAM role on EC2 instances)
-      aws configure set aws_access_key_id ${var.aws_access_key_id}
-      aws configure set aws_secret_access_key ${var.aws_secret_access_key}
-      aws configure set region ${var.aws_region}
-      
+          
       # Check if the key pair exists
       key_exists=$(aws ec2 describe-key-pairs --key-name deployer-key --query 'KeyPairs[0].KeyName' --output text)
       
