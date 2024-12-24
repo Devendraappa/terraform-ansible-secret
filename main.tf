@@ -31,7 +31,7 @@ resource "aws_key_pair" "deployer" {
 
 # EC2 instance resource
 resource "aws_instance" "web_server" {
-  ami           = "ami-0fd05997b4dff7aac"  # Replace with your AMI ID
+  ami           = "ami-053b12d3152c0cc71"  # Replace with your AMI ID
   instance_type = "t2.micro"
   key_name      = aws_key_pair.deployer.key_name  # Use the created or existing key pair
 
