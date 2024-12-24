@@ -29,38 +29,32 @@ jobs:
       with:
         role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.ROLE_NAME }}
         aws-region: ${{ secrets.AWS_REGION }}
+
     - name: Set up SSH keys
       run: |
-        # Ensure the .ssh directory exists
         mkdir -p ~/.ssh
-        
-        # Store the private key from GitHub Secrets
         echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/deployer_key.pem
         chmod 600 ~/.ssh/deployer_key.pem  # Ensure the private key has the correct permissions
-        
-        # Store the public key from GitHub Secrets for Terraform
-        echo "${{ secrets.AWS_SSH_PUBLIC_KEY }}" > ~/.ssh/deployer_key.pub
+        echo "${{ secrets.AWS_SSH_PUBLIC_KEY }}" > deployer_key.pub
 
     - name: Terraform Init
       run: terraform init
 
     - name: Terraform Plan
-      run: terraform plan -var "ssh_public_key=$(cat ~/.ssh/deployer_key.pub)" -var "ssh_private_key=$(cat ~/.ssh/deployer_key.pem)"
+      run: terraform plan -var "ssh_public_key=$(cat deployer_key.pub)" -var "ssh_private_key=$(cat ~/.ssh/deployer_key.pem)"
 
     - name: Terraform Apply
-      run: terraform apply -auto-approve -var "ssh_public_key=$(cat ~/.ssh/deployer_key.pub)" -var "ssh_private_key=$(cat ~/.ssh/deployer_key.pem)"
+      run: terraform apply -auto-approve -var "ssh_public_key=$(cat deployer_key.pub)" -var "ssh_private_key=$(cat ~/.ssh/deployer_key.pem)"
 
     - name: Install Ansible
       run: |
         sudo apt-get update
         sudo apt-get install -y ansible
 
-    - name: Wait for EC2 instance to be ready
-      run: |
-        echo "Waiting for instance to be accessible..."
-        sleep 30  # Wait a bit for the instance to be fully initialized and ready for SSH
-
     - name: Configure EC2 with Ansible
       run: |
-        # Use the private key for SSH access in Ansible
-        ansible-playbook -i "$(terraform output -raw instance_public_ip)," -u ubuntu --private-key ~/.ssh/deployer_key.pem deploy_nginx.yaml
+        # Get the public IP from Terraform output
+        PUBLIC_IP=$(terraform output -raw instance_public_ip)
+        
+        # Run Ansible playbook using the public IP
+        ansible-playbook -i "$PUBLIC_IP," -u ubuntu --private-key ~/.ssh/deployer_key.pem deploy_nginx.yaml
