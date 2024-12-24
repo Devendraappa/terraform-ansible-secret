@@ -1,40 +1,18 @@
-provider "aws" {
-  region = "ap-south-1" # Update to your preferred region
-}
-
-# Generate a new SSH key pair
-resource "tls_private_key" "ssh_key" {
-  algorithm = "RSA"
-  rsa_bits  = 4096
-}
-
-# Delete the existing key pair if it exists
-resource "null_resource" "delete_existing_key" {
-  provisioner "local-exec" {
-    command = <<EOT
-      aws ec2 delete-key-pair --key-name deployer-key || echo "Key not found, skipping deletion"
-    EOT
-  }
-  # Run only once
-  triggers = {
-    always_run = timestamp()
-  }
-}
-
-# Save the new key pair in AWS
-resource "aws_key_pair" "deployer_key" {
+resource "aws_key_pair" "deployer" {
   key_name   = "deployer-key"
-  public_key = tls_private_key.ssh_key.public_key_openssh
-
-  depends_on = [null_resource.delete_existing_key]
+  public_key = var.ssh_public_key  # Use the public key from the GitHub secret
 }
 
-# Create an EC2 instance using the new key
 resource "aws_instance" "web_server" {
-  ami           = "ami-0fd05997b4dff7aac" # Update with your preferred AMI
+  ami           = "ami-0fd05997b4dff7aac"  # Example AMI ID, replace with a valid one
   instance_type = "t2.micro"
-  key_name      = aws_key_pair.deployer_key.key_name
+  key_name      = aws_key_pair.deployer.key_name  # Reference the created key pair
 
+  tags = {
+    Name = "WebServer"
+  }
+
+  # Provisioner to execute commands to install Nginx
   provisioner "remote-exec" {
     inline = [
       "sudo apt-get update",
@@ -45,10 +23,14 @@ resource "aws_instance" "web_server" {
 
     connection {
       type        = "ssh"
-      user        = "ubuntu" # Update according to your AMI's default username
-      private_key = tls_private_key.ssh_key.private_key_pem
+      user        = "ubuntu"  # Default user for Ubuntu instances
+      private_key = var.ssh_private_key  # Use the private key from the GitHub secret
       host        = self.public_ip
     }
   }
 }
 
+output "instance_public_ip" {
+  value = aws_instance.web_server.public_ip
+  description = "The public IP of the web server instance"
+}
