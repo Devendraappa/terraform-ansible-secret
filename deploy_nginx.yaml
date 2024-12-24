@@ -1,17 +1,18 @@
----
-- name: Install and configure Nginx
+- name: Configure Nginx on EC2 instance
   hosts: all
-  become: true
   tasks:
-    - name: Update apt packages
+    - name: Update and upgrade apt packages
       apt:
         update_cache: yes
+        upgrade: dist
+
     - name: Install Nginx
       apt:
         name: nginx
         state: present
+
     - name: Start Nginx service
       service:
         name: nginx
         state: started
-        enabled: yes
+        enabled: true
