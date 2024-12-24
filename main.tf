@@ -50,7 +50,7 @@ resource "aws_instance" "web_server" {
   connection {
     type        = "ssh"
     user        = "ubuntu"  # Default user for Ubuntu instances
-    private_key = file(var.ssh_private_key)  # Use file() function to read the private key from a file
+    private_key = var.ssh_private_key  # Directly use the private key from GitHub secrets
     host        = self.public_ip
     agent       = false
     timeout     = "2m"  # Optional: Add a timeout to ensure SSH connections don't hang indefinitely
