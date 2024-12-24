@@ -1,7 +1,6 @@
 name: Terraform using Ansible
-
 on:
-  #push:
+  push:
     branches:
       - main
   pull_request:
@@ -29,7 +28,7 @@ jobs:
       with:
         role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.ROLE_NAME }}
         aws-region: ${{ secrets.AWS_REGION }}
-        
+
     - name: Terraform Init
       run: terraform init
 
@@ -44,6 +43,11 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y ansible
 
-    - name: Run Ansible Playbook
+    - name: Configure EC2 with Ansible
       run: |
-        ansible-playbook -i "$(terraform output -raw instance_public_ip)," -u ubuntu --private-key ~/.ssh/deployer_key deploy_nginx.yml
+        # Create private key file from GitHub Secrets
+        echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/deployer_key.pem
+        chmod 600 ~/.ssh/deployer_key.pem
+
+        # Run Ansible playbook using the private key
+        ansible-playbook -i "$(terraform output -raw instance_public_ip)," -u ubuntu --private-key ~/.ssh/deployer_key.pem deploy_nginx.yml
