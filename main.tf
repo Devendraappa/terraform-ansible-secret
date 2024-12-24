@@ -6,9 +6,17 @@ provider "aws" {
 resource "null_resource" "delete_key_pair" {
   provisioner "local-exec" {
     command = <<EOT
-      echo "Checking if the key pair exists..."
+      # Install AWS CLI (Ubuntu)
+      sudo apt-get update
+      sudo apt-get install -y awscli
+
+      # Configure AWS CLI (Optional: you can skip if using IAM role on EC2 instances)
+      aws configure set aws_access_key_id ${var.aws_access_key_id}
+      aws configure set aws_secret_access_key ${var.aws_secret_access_key}
+      aws configure set region ${var.aws_region}
+      
+      # Check if the key pair exists
       key_exists=$(aws ec2 describe-key-pairs --key-name deployer-key --query 'KeyPairs[0].KeyName' --output text)
-      echo "Key pair check result: $key_exists"
       
       if [ "$key_exists" == "deployer-key" ]; then
         echo "Key pair exists, deleting..."
@@ -30,7 +38,7 @@ resource "aws_key_pair" "deployer" {
   depends_on = [null_resource.delete_key_pair]
 
   key_name   = "deployer-key"
-  public_key = var.ssh_public_key  # Ensure this variable is properly set
+  public_key = var.ssh_public_key
 }
 
 # EC2 instance resource
@@ -54,10 +62,10 @@ resource "aws_instance" "web_server" {
     connection {
       type        = "ssh"
       user        = "ubuntu"  # Default user for Ubuntu instances
-      private_key = var.ssh_private_key  # Ensure private key is properly provided
+      private_key = var.ssh_private_key  # Directly use the private key from GitHub secrets
       host        = self.public_ip
       agent       = false
-      timeout     = "2m"
+      timeout     = "2m"  # Optional: Add a timeout to ensure SSH connections don't hang indefinitely
     }
   }
 }
