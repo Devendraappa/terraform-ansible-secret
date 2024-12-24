@@ -5,7 +5,15 @@ provider "aws" {
 # Check if the key pair exists, and delete it if it does
 resource "null_resource" "delete_key_pair" {
   provisioner "local-exec" {
-    command = "aws ec2 describe-key-pairs --key-name deployer-key || aws ec2 delete-key-pair --key-name deployer-key"
+    command = <<EOT
+      key_exists=$(aws ec2 describe-key-pairs --key-name deployer-key --query 'KeyPairs[0].KeyName' --output text)
+      if [ "$key_exists" == "deployer-key" ]; then
+        echo "Key pair exists, deleting..."
+        aws ec2 delete-key-pair --key-name deployer-key
+      else
+        echo "Key pair does not exist."
+      fi
+    EOT
   }
 
   triggers = {
@@ -47,3 +55,5 @@ resource "aws_instance" "web_server" {
     }
   }
 }
+
+
