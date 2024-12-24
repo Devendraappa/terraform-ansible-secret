@@ -1,4 +1,4 @@
-name: Terraform using Ansible 
+name: Terraform using Ansible
 
 on:
   push:
@@ -62,16 +62,19 @@ jobs:
         # Capture the public IP from Terraform output
         instance_ip=$(terraform output -raw instance_public_ip)
         
-        # Ensure the output is formatted correctly
-        echo "EC2 Instance IP: $instance_ip"
+        # Debug: Print the raw instance IP (this will help identify the issue)
+        echo "Instance IP from Terraform: $instance_ip"
         
-        # Set the instance IP as a GitHub environment variable
+        # Set the instance IP as a GitHub environment variable for later steps
         echo "instance_ip=$instance_ip" >> $GITHUB_ENV
 
     - name: Configure EC2 with Ansible
       run: |
         # Get the public IP passed from the previous step
         instance_ip=${{ env.instance_ip }}
-
+        
+        # Ensure the instance IP is printed correctly
+        echo "Using instance IP: $instance_ip"
+        
         # Use the private key for SSH access in Ansible
         ansible-playbook -i "$instance_ip," -u ubuntu --private-key ~/.ssh/deployer_key.pem deploy_nginx.yaml
