@@ -1,5 +1,4 @@
-
-name: Terraform CI/CD -OIDC test
+name: Terraform using Ansible
 
 on:
   push:
@@ -39,3 +38,12 @@ jobs:
 
     - name: Terraform Apply
       run: terraform apply -auto-approve
+
+    - name: Install Ansible
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ansible
+
+    - name: Run Ansible Playbook
+      run: |
+        ansible-playbook -i "$(terraform output -raw instance_public_ip)," -u ubuntu --private-key ~/.ssh/deployer_key deploy_nginx.yml
