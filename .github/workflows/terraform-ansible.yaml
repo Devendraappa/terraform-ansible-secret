@@ -1,7 +1,7 @@
 name: Terraform using Ansible
 
 on:
-  push:
+  #push:
     branches:
       - main
   pull_request:
