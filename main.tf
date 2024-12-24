@@ -1,37 +1,22 @@
-provider "aws" {
-  region = "ap-south-1"
+# Generate a new SSH key pair
+resource "tls_private_key" "ssh_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
 }
 
-# Create a security group
-resource "aws_security_group" "allow_web" {
-  name_prefix = "allow_web"
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+# Save the public key in AWS as a key pair
+resource "aws_key_pair" "deployer_key" {
+  key_name   = "deployer-key"
+  public_key = tls_private_key.ssh_key.public_key_openssh
 }
 
-# Provision an EC2 instance
+# Use the private key for SSH access
 resource "aws_instance" "web_server" {
-  ami           = "ami-0fd05997b4dff7aac"  
+  ami           = "ami-0c55b159cbfafe1f0"  # Update with the desired AMI ID
   instance_type = "t2.micro"
-  security_groups = [aws_security_group.allow_web.name]
-  
-  tags = {
-    Name = "WebServer"
-  }
+  key_name      = aws_key_pair.deployer_key.key_name
 
-  # Ansible remote-exec provisioner to install Nginx
+  # Provisioning Nginx
   provisioner "remote-exec" {
     inline = [
       "sudo apt-get update",
@@ -42,8 +27,8 @@ resource "aws_instance" "web_server" {
 
     connection {
       type        = "ssh"
-      user        = "ubuntu"  # Update with the correct username (e.g., ubuntu, ec2-user)
-      private_key = file("~/.ssh/id_rsa")  # Update with the path to your private key
+      user        = "ubuntu"  # Update with the correct username for your AMI
+      private_key = tls_private_key.ssh_key.private_key_pem
       host        = self.public_ip
     }
   }
