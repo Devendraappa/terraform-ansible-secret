@@ -32,9 +32,14 @@ jobs:
 
     - name: Set up SSH keys
       run: |
+        # Ensure the .ssh directory exists
         mkdir -p ~/.ssh
+        
+        # Store the private key from GitHub Secrets
         echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/deployer_key.pem
         chmod 600 ~/.ssh/deployer_key.pem  # Ensure the private key has the correct permissions
+        
+        # Store the public key from GitHub Secrets for Terraform
         echo "${{ secrets.AWS_SSH_PUBLIC_KEY }}" > deployer_key.pub
 
     - name: Terraform Init
@@ -51,13 +56,10 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y ansible
 
-    - name: Get the Public IP from Terraform Output
-      id: get_ip
-      run: |
-        # Extract the public IP from the Terraform output and save it in the environment variable
-        echo "PUBLIC_IP=$(terraform output -raw instance_public_ip)" >> $GITHUB_ENV
-
     - name: Configure EC2 with Ansible
       run: |
-        # Use the environment variable for the IP and configure EC2
-        ansible-playbook -i "$PUBLIC_IP," -u ubuntu --private-key ~/.ssh/deployer_key.pem deploy_nginx.yaml
+        # Capture the public IP from the Terraform output cleanly
+        instance_ip=$(terraform output -raw instance_public_ip)
+        
+        # Use the private key for SSH access in Ansible
+        ansible-playbook -i "$instance_ip," -u ubuntu --private-key ~/.ssh/deployer_key.pem deploy_nginx.yaml
