@@ -32,6 +32,9 @@ jobs:
 
     - name: Set up SSH keys
       run: |
+        # Ensure the .ssh directory exists
+        mkdir -p ~/.ssh
+        
         # Store the private key from GitHub Secrets
         echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/deployer_key.pem
         chmod 600 ~/.ssh/deployer_key.pem  # Ensure the private key has the correct permissions
