@@ -56,4 +56,4 @@ resource "aws_instance" "web_server" {
     timeout     = "2m"  # Optional: Add a timeout to ensure SSH connections don't hang indefinitely
   }
 }
-
+}
