@@ -12,7 +12,7 @@ resource "aws_key_pair" "deployer_key" {
 
 # Use the private key for SSH access
 resource "aws_instance" "web_server" {
-  ami           = "ami-0c55b159cbfafe1f0"  # Update with the desired AMI ID
+  ami           = "ami-0fd05997b4dff7aac"  # Update with the desired AMI ID
   instance_type = "t2.micro"
   key_name      = aws_key_pair.deployer_key.key_name
 
