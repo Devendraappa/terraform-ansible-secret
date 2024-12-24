@@ -1,4 +1,5 @@
-name: Terraform using Ansible
+name: Terraform using ansible
+
 on:
   push:
     branches:
@@ -29,14 +30,23 @@ jobs:
         role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.ROLE_NAME }}
         aws-region: ${{ secrets.AWS_REGION }}
 
+    - name: Set up SSH keys
+      run: |
+        # Store the private key from GitHub Secrets
+        echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/deployer_key.pem
+        chmod 600 ~/.ssh/deployer_key.pem  # Ensure the private key has the correct permissions
+        
+        # Store the public key from GitHub Secrets for Terraform
+        echo "${{ secrets.AWS_SSH_PUBLIC_KEY }}" > deployer_key.pub
+
     - name: Terraform Init
       run: terraform init
 
     - name: Terraform Plan
-      run: terraform plan
+      run: terraform plan -var "ssh_public_key=$(cat deployer_key.pub)" -var "ssh_private_key=$(cat ~/.ssh/deployer_key.pem)"
 
     - name: Terraform Apply
-      run: terraform apply -auto-approve
+      run: terraform apply -auto-approve -var "ssh_public_key=$(cat deployer_key.pub)" -var "ssh_private_key=$(cat ~/.ssh/deployer_key.pem)"
 
     - name: Install Ansible
       run: |
@@ -45,9 +55,5 @@ jobs:
 
     - name: Configure EC2 with Ansible
       run: |
-        # Create private key file from GitHub Secrets
-        echo "${{ secrets.AWS_SSH_PRIVATE_KEY }}" > ~/.ssh/deployer_key.pem
-        chmod 600 ~/.ssh/deployer_key.pem
-
-        # Run Ansible playbook using the private key
+        # Use the private key for SSH access in Ansible
         ansible-playbook -i "$(terraform output -raw instance_public_ip)," -u ubuntu --private-key ~/.ssh/deployer_key.pem deploy_nginx.yml
