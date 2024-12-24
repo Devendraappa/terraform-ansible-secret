@@ -6,10 +6,14 @@ provider "aws" {
 resource "null_resource" "delete_key_pair" {
   provisioner "local-exec" {
     command = <<EOT
+      echo "Checking if the key pair exists..."
       key_exists=$(aws ec2 describe-key-pairs --key-name deployer-key --query 'KeyPairs[0].KeyName' --output text)
+      echo "Key pair check result: $key_exists"
+      
       if [ "$key_exists" == "deployer-key" ]; then
         echo "Key pair exists, deleting..."
         aws ec2 delete-key-pair --key-name deployer-key
+        echo "Key pair deleted."
       else
         echo "Key pair does not exist."
       fi
@@ -26,7 +30,7 @@ resource "aws_key_pair" "deployer" {
   depends_on = [null_resource.delete_key_pair]
 
   key_name   = "deployer-key"
-  public_key = var.ssh_public_key  # Make sure the public key is provided correctly
+  public_key = var.ssh_public_key  # Ensure this variable is properly set
 }
 
 # EC2 instance resource
@@ -50,10 +54,10 @@ resource "aws_instance" "web_server" {
     connection {
       type        = "ssh"
       user        = "ubuntu"  # Default user for Ubuntu instances
-      private_key = var.ssh_private_key  # Ensure private key is properly provided (through GitHub Secrets or local file)
+      private_key = var.ssh_private_key  # Ensure private key is properly provided
       host        = self.public_ip
       agent       = false
-      timeout     = "2m"  # Optional: Add a timeout to ensure SSH connections don't hang indefinitely
+      timeout     = "2m"
     }
   }
 }
