@@ -40,19 +40,20 @@ resource "aws_instance" "web_server" {
   }
 
   provisioner "remote-exec" {
-    inline = [
-      "sudo apt-get update",
-      "sudo apt-get install -y nginx",
-      "sudo systemctl start nginx",
-      "sudo systemctl enable nginx"
-    ]
+  inline = [
+    "sudo apt-get update",
+    "sudo apt-get install -y nginx",
+    "sudo systemctl start nginx",
+    "sudo systemctl enable nginx"
+  ]
 
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"  # Default user for Ubuntu instances
-      private_key = var.ssh_private_key  # The private key from GitHub secrets
-      host        = self.public_ip
-      agent       = false
-    }
+  connection {
+    type        = "ssh"
+    user        = "ubuntu"  # Default user for Ubuntu instances
+    private_key = file(var.ssh_private_key)  # Use file() function to read the private key from a file
+    host        = self.public_ip
+    agent       = false
+    timeout     = "2m"  # Optional: Add a timeout to ensure SSH connections don't hang indefinitely
   }
 }
+
