@@ -1,5 +1,5 @@
 provider "aws" {
-  region = "ap-south-1"  # Update with your AWS region
+  region = "ap-south-1"  # Update with your AWS region 
 }
 
 # Check if the key pair exists, and delete it if it does
