@@ -26,7 +26,7 @@ resource "aws_key_pair" "deployer" {
   depends_on = [null_resource.delete_key_pair]
 
   key_name   = "deployer-key"
-  public_key = var.ssh_public_key
+  public_key = var.ssh_public_key  # Make sure the public key is provided correctly
 }
 
 # EC2 instance resource
@@ -40,20 +40,20 @@ resource "aws_instance" "web_server" {
   }
 
   provisioner "remote-exec" {
-  inline = [
-    "sudo apt-get update",
-    "sudo apt-get install -y nginx",
-    "sudo systemctl start nginx",
-    "sudo systemctl enable nginx"
-  ]
+    inline = [
+      "sudo apt-get update",
+      "sudo apt-get install -y nginx",
+      "sudo systemctl start nginx",
+      "sudo systemctl enable nginx"
+    ]
 
-  connection {
-    type        = "ssh"
-    user        = "ubuntu"  # Default user for Ubuntu instances
-    private_key = var.ssh_private_key  # Directly use the private key from GitHub secrets
-    host        = self.public_ip
-    agent       = false
-    timeout     = "2m"  # Optional: Add a timeout to ensure SSH connections don't hang indefinitely
+    connection {
+      type        = "ssh"
+      user        = "ubuntu"  # Default user for Ubuntu instances
+      private_key = var.ssh_private_key  # Ensure private key is properly provided (through GitHub Secrets or local file)
+      host        = self.public_ip
+      agent       = false
+      timeout     = "2m"  # Optional: Add a timeout to ensure SSH connections don't hang indefinitely
+    }
   }
-}
 }
