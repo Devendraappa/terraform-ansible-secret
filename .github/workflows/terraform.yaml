@@ -1,58 +1,41 @@
-provider "aws" {
-  region = "us-east-1"  # Change the region as needed
-}
 
-resource "aws_instance" "web_server" {
-  ami           = "ami-0fd05997b4dff7aac"  # Replace with your preferred AMI ID
-  instance_type = "t2.micro"
+name: Terraform CI/CD -OIDC test
 
-  key_name = aws_key_pair.deployer.key_name
+on:
+  push:
+    branches:
+      - main
+  pull_request:
 
-  security_groups = [aws_security_group.web_sg.name]
+permissions:
+  contents: read
+  id-token: write
 
-  provisioner "remote-exec" {
-    inline = [
-      "sudo apt-get update -y",
-      "sudo apt-get install -y nginx",
-      "sudo systemctl start nginx",
-      "sudo systemctl enable nginx"
-    ]
+jobs:
+  terraform:
+    name: Terraform Workflow
+    runs-on: ubuntu-latest
 
-    connection {
-      type        = "ssh"
-      user        = "ubuntu"
-      private_key = file("~/.ssh/deployer_key.pem")  # Replace with your private key path
-      host        = self.public_ip
-    }
-  }
-}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-resource "aws_security_group" "web_sg" {
-  name_prefix = "web-sg-"
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v2
+      with:
+        terraform_version: 1.5.6
 
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v2
+      with:
+        role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/${{ secrets.ROLE_NAME }}
+        aws-region: ${{ secrets.AWS_REGION }}
+        
+    - name: Terraform Init
+      run: terraform init
 
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
+    - name: Terraform Plan
+      run: terraform plan
 
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-
-resource "aws_key_pair" "deployer" {
-  key_name   = "deployer-key"
-  public_key = file("~/.ssh/deployer_key.pub")  # Replace with your public key path
-}
+    - name: Terraform Apply
+      run: terraform apply -auto-approve
