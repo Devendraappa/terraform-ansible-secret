@@ -1,4 +1,4 @@
-name: Terraform using Ansible 
+name: Terraform using Ansible
 
 on:
   push:
@@ -51,10 +51,13 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y ansible
 
+    - name: Get the Public IP from Terraform Output
+      id: get_ip
+      run: |
+        # Extract the public IP from the Terraform output and save it in the environment variable
+        echo "PUBLIC_IP=$(terraform output -raw instance_public_ip)" >> $GITHUB_ENV
+
     - name: Configure EC2 with Ansible
       run: |
-        # Get the public IP from Terraform output
-        PUBLIC_IP=$(terraform output -raw instance_public_ip)
-        
-        # Run Ansible playbook using the public IP
+        # Use the environment variable for the IP and configure EC2
         ansible-playbook -i "$PUBLIC_IP," -u ubuntu --private-key ~/.ssh/deployer_key.pem deploy_nginx.yaml
