@@ -2,12 +2,6 @@ provider "aws" {
   region = "ap-south-1"  # Update with your AWS region
 }
 
-# Variable declaration (make sure to pass the SSH public key through GitHub Actions secrets)
-variable "ssh_public_key" {
-  description = "The public SSH key to be used for the EC2 instance"
-  type        = string
-}
-
 # Check if key pair exists and delete it if it does
 resource "null_resource" "delete_key_pair" {
   provisioner "local-exec" {
