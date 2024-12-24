@@ -56,4 +56,4 @@ jobs:
     - name: Configure EC2 with Ansible
       run: |
         # Use the private key for SSH access in Ansible
-        ansible-playbook -i "$(terraform output -raw instance_public_ip)," -u ubuntu --private-key ~/.ssh/deployer_key.pem deploy_nginx.yml
+        ansible-playbook -i "$(terraform output -raw instance_public_ip)," -u ubuntu --private-key ~/.ssh/deployer_key.pem deploy_nginx.yaml
